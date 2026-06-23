@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="20dp"
+    tools:context=".MainActivity2">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <Button
+                android:visibility="gone"
+                android:id="@+id/notification"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Notification"
+                android:layout_marginTop="16dp" />
+
+            <Button
+                android:id="@+id/maps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Draw Route"
+                android:layout_marginTop="16dp" />
+
+            <Button
+                android:id="@+id/currentLoc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Current Location (Lat/Lng)"
+                android:layout_marginTop="16dp" />
+
+            <Button
+                android:id="@+id/currentLocAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Current Loc with Address"
+                android:layout_marginTop="16dp" />
+
+            <Button
+                android:id="@+id/bgFetch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Continue Fetch in BG (Foreground)"
+                android:layout_marginTop="16dp" />
+
+            <Button
+                android:id="@+id/screenOnFetch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Continue Loc Fetch (Screen ON)"
+                android:layout_marginTop="16dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

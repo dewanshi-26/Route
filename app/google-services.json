@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "879237743968",
+    "project_id": "bmc-dian-26",
+    "storage_bucket": "bmc-dian-26.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:879237743968:android:b349cad9006b3506894a05",
+        "android_client_info": {
+          "package_name": "com.example.bmc_dian"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALbC9ITXSFfgUUfDce3ngNuQIt7GY2n_M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

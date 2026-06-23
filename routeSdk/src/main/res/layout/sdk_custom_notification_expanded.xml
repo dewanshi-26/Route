@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/sdk_notif_bg">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp">
+
+        <ImageView
+            android:id="@+id/imgLogoExpanded"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ringing"
+            android:background="#22FFFFFF"
+            android:padding="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/imgLogoExpanded"
+            android:layout_marginStart="12dp"
+            android:layout_centerVertical="true"
+            android:text="Notification SDK"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="14sp"/>
+
+        <TextView
+            android:id="@+id/txtTimeExpanded"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:text="Now"
+            android:textColor="#B3FFFFFF"
+            android:textSize="11sp" />
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/txtTitleExpanded"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Title"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/txtMessageExpanded"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Detailed message goes here..."
+        android:textColor="#E0E0E0"
+        android:textSize="15sp"
+        android:lineSpacingExtra="2dp" />
+
+</LinearLayout>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Foreground Service Location Fetching..."
+        android:textSize="18sp"
+        android:textAlignment="center"
+        android:layout_marginBottom="20dp"/>
+
+    <Button
+        android:id="@+id/btnStartService"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Start Service"
+        android:layout_marginBottom="10dp"/>
+
+    <Button
+        android:id="@+id/btnPauseService"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Pause Logging"
+        android:layout_marginBottom="10dp"/>
+
+    <Button
+        android:id="@+id/btnResumeService"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Resume Logging"
+        android:layout_marginBottom="10dp"/>
+
+    <Button
+        android:id="@+id/btnStopService"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Stop Service"
+        android:layout_marginBottom="10dp"/>
+
+    <Button
+        android:id="@+id/btnViewLogs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View Overnight Logs (DB)"
+        android:layout_marginBottom="10dp"/>
+
+    <Button
+        android:id="@+id/btnClearLogs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Clear Database"
+        android:layout_marginBottom="20dp"/>
+
+    <TextView
+        android:visibility="gone"
+        android:id="@+id/logText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Check Logcat for 'LOCATION_TRACKER' tag"
+        android:textColor="#666666"/>
+
+</LinearLayout>
