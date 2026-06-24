@@ -15,12 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import com.example.bmc_dian.R;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
+import com.example.locsdk.LocSdk;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -29,13 +24,12 @@ import java.util.Locale;
 public class ScreenOnFetchActivity extends AppCompatActivity {
 
     private static final String TAG = "LOCATION_TRACKING";
-    private FusedLocationProviderClient fusedLocationClient;
-    private LocationCallback locationCallback;
+    private LocSdk locSdk;
     private TextView statusText;
     private Location lastKnownLocation;
     private final Handler repeatLogHandler = new Handler(Looper.getMainLooper());
 
-    private final Runnable repeatLogRunnable = new Runnable() {
+    public final Runnable repeatLogRunnable = new Runnable() {
         @Override
         public void run() {
             String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
@@ -64,21 +58,14 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
         Log.e(TAG, "ScreenOnFetchActivity: Created");
 
         statusText = findViewById(R.id.statusText);
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-
-        locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(@NonNull LocationResult locationResult) {
-                lastKnownLocation = locationResult.getLastLocation();
-            }
-        };
+        locSdk = new LocSdk(this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         Log.e(TAG, "ScreenOnFetchActivity: Resumed - Starting heartbeats");
-        startLocationUpdates();
+        locSdk.startSimpleLocationUpdates(2000, location -> lastKnownLocation = location);
         repeatLogHandler.post(repeatLogRunnable);
     }
 
@@ -86,25 +73,7 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         Log.e(TAG, "ScreenOnFetchActivity: Paused - Stopping heartbeats");
-        stopLocationUpdates();
+        locSdk.stopLocationUpdates();
         repeatLogHandler.removeCallbacks(repeatLogRunnable);
-    }
-
-    private void startLocationUpdates() {
-        LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000)
-                .setMinUpdateIntervalMillis(1000)
-                .build();
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
-        } else {
-            Toast.makeText(this, "Permission required", Toast.LENGTH_SHORT).show();
-            finish();
-        }
-    }
-
-    private void stopLocationUpdates() {
-        if (fusedLocationClient != null && locationCallback != null) {
-            fusedLocationClient.removeLocationUpdates(locationCallback);
-        }
     }
 }

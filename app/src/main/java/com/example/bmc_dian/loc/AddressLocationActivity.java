@@ -17,12 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import com.example.bmc_dian.R;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
+import com.example.locsdk.LocSdk;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -33,13 +28,12 @@ import java.util.Locale;
 public class AddressLocationActivity extends AppCompatActivity {
 
     private static final String TAG = "LOCATION_TRACKING";
-    private FusedLocationProviderClient fusedLocationClient;
-    private LocationCallback locationCallback;
+    private LocSdk locSdk;
     private TextView statusText;
     private Location lastKnownLocation;
     private final Handler repeatLogHandler = new Handler(Looper.getMainLooper());
 
-    private final Runnable repeatLogRunnable = new Runnable() {
+    public final Runnable repeatLogRunnable = new Runnable() {
         @Override
         public void run() {
             String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
@@ -49,7 +43,7 @@ public class AddressLocationActivity extends AppCompatActivity {
             Log.e(TAG, "TIME: " + time);
             
             if (lastKnownLocation != null) {
-                String address = getAddressFromLocation(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+                String address = locSdk.getAddressFromLocation(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
                 Log.e(TAG, "LAT/LNG: " + lastKnownLocation.getLatitude() + ", " + lastKnownLocation.getLongitude());
                 Log.e(TAG, "ADDRESS: " + address);
                 statusText.setText("Address:\n" + address + "\n\nLast updated: " + time);
@@ -70,51 +64,18 @@ public class AddressLocationActivity extends AppCompatActivity {
         Log.e(TAG, "AddressLocationActivity: Started");
 
         statusText = findViewById(R.id.statusText);
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        locSdk = new LocSdk(this);
 
-        startLocationUpdates();
+        locSdk.startSimpleLocationUpdates(2000, location -> lastKnownLocation = location);
         repeatLogHandler.post(repeatLogRunnable);
-    }
-
-    private void startLocationUpdates() {
-        LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000)
-                .setMinUpdateIntervalMillis(1000)
-                .build();
-
-        locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(@NonNull LocationResult locationResult) {
-                lastKnownLocation = locationResult.getLastLocation();
-            }
-        };
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
-        } else {
-            Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
-            finish();
-        }
-    }
-
-    private String getAddressFromLocation(double lat, double lng) {
-        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
-        try {
-            List<Address> addresses = geocoder.getFromLocation(lat, lng, 1);
-            if (addresses != null && !addresses.isEmpty()) {
-                return addresses.get(0).getAddressLine(0);
-            }
-        } catch (IOException e) {
-            return "Geocoder Error: " + e.getMessage();
-        }
-        return "Address not found";
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         repeatLogHandler.removeCallbacks(repeatLogRunnable);
-        if (fusedLocationClient != null && locationCallback != null) {
-            fusedLocationClient.removeLocationUpdates(locationCallback);
+        if (locSdk != null) {
+            locSdk.stopLocationUpdates();
         }
         Log.e(TAG, "AddressLocationActivity: Stopped");
     }

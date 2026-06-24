@@ -18,6 +18,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 import com.example.bmc_dian.R;
+import com.example.locsdk.LocSdk;
+import com.example.locsdk.LocationDbHelper;
+import com.example.locsdk.LocationService;
 
 import java.io.File;
 
@@ -26,8 +29,9 @@ public class BackgroundFetchActivity extends AppCompatActivity {
     public static final String TAG = "LOCATION_TRACKING";
     private TextView statusText;
     private LocationDbHelper dbHelper;
+    private LocSdk locSdk;
 
-    private final BroadcastReceiver locationReceiver = new BroadcastReceiver() {
+    public final BroadcastReceiver locationReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if ("LocationUpdate".equals(intent.getAction())) {
@@ -47,6 +51,7 @@ public class BackgroundFetchActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_background_fetch);
         dbHelper = new LocationDbHelper(this);
+        locSdk = new LocSdk(this);
 
         Button btnStartService = findViewById(R.id.btnStartService);
         Button btnPauseService = findViewById(R.id.btnPauseService);
@@ -58,10 +63,10 @@ public class BackgroundFetchActivity extends AppCompatActivity {
 
         statusText = findViewById(R.id.statusText);
 
-        btnStartService.setOnClickListener(v -> startMyService());
-        btnPauseService.setOnClickListener(v -> sendActionToService(LocationService.ACTION_PAUSE));
-        btnResumeService.setOnClickListener(v -> sendActionToService(LocationService.ACTION_RESUME));
-        btnStopService.setOnClickListener(v -> sendActionToService(LocationService.ACTION_STOP));
+        btnStartService.setOnClickListener(v -> locSdk.startBackgroundService());
+        btnPauseService.setOnClickListener(v -> locSdk.sendActionToService(LocationService.ACTION_PAUSE));
+        btnResumeService.setOnClickListener(v -> locSdk.sendActionToService(LocationService.ACTION_RESUME));
+        btnStopService.setOnClickListener(v -> locSdk.stopBackgroundService());
 
         btnViewLogs.setOnClickListener(v -> dumpDatabaseLogs());
         
@@ -78,7 +83,7 @@ public class BackgroundFetchActivity extends AppCompatActivity {
         });
     }
 
-    private void exportLogFile() {
+    public void exportLogFile() {
         File logFile = new File(getExternalFilesDir(null), "OvernightLogs.txt");
         if (!logFile.exists()) {
             Toast.makeText(this, "No log file found yet.", Toast.LENGTH_SHORT).show();
@@ -92,7 +97,7 @@ public class BackgroundFetchActivity extends AppCompatActivity {
         startActivity(Intent.createChooser(intent, "Export Overnight Logs"));
     }
 
-    private void dumpDatabaseLogs() {
+    public void dumpDatabaseLogs() {
         Log.wtf(TAG, "!!! [DB DUMP] RECOVERING OVERNIGHT HISTORY !!!");
         Cursor cursor = dbHelper.getAllLogs();
         int count = 0;
@@ -112,19 +117,6 @@ public class BackgroundFetchActivity extends AppCompatActivity {
         }
         if (count == 0) Log.wtf(TAG, "!!! [DB DUMP] DATABASE EMPTY !!!");
         else Log.wtf(TAG, "!!! [DB DUMP] SUCCESS: " + count + " LOGS PRINTED !!!");
-    }
-
-    private void sendActionToService(String action) {
-        Intent intent = new Intent(this, LocationService.class);
-        intent.setAction(action);
-        startService(intent);
-        Toast.makeText(this, "Action Sent: " + action, Toast.LENGTH_SHORT).show();
-    }
-
-    private void startMyService() {
-        Intent intent = new Intent(this, LocationService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent);
-        else startService(intent);
     }
 
     @Override

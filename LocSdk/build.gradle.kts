@@ -1,35 +1,26 @@
-import org.gradle.api.publish.maven.MavenPublication
-
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.google.android.libraries.mapsplatform.secrets.gradle.plugin)
     `maven-publish`
 }
 
 android {
-    namespace = "com.example.bmc_dian"
-    compileSdk = 36
+    namespace = "com.example.locsdk"
+    compileSdk = 34
 
     defaultConfig {
         minSdk = 24
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            optimization {
-                enable = false
-            }
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    buildFeatures {
-        viewBinding = true
     }
     publishing {
         singleVariant("release") {
@@ -41,8 +32,8 @@ android {
 publishing {
     publications {
         register<MavenPublication>("release") {
-            groupId = "com.example.bmc_dian"
-            artifactId = "location-sdk"
+            groupId = "com.example.locsdk"
+            artifactId = "locsdk"
             version = "1.0.0"
 
             afterEvaluate {
@@ -53,13 +44,7 @@ publishing {
 }
 
 dependencies {
-    implementation(project(":LocSdk"))
-    implementation(libs.activity.ktx)
     implementation(libs.appcompat)
-    implementation(libs.constraintlayout)
-    implementation(libs.material)
-    implementation(libs.firebase.messaging)
-    implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)

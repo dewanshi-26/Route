@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "NotificationApp"
 include(":app")
+include(":LocSdk")
