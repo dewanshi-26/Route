@@ -1,4 +1,4 @@
-package com.example.locationsdk;
+package com.example.bmc_dian.loc;
 
 import android.content.ContentValues;
 import android.content.Context;

@@ -1,4 +1,4 @@
-package com.example.locationsdk;
+package com.example.bmc_dian.loc;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import com.example.bmc_dian.R;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -25,7 +26,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class ScreenOnFetchActivity extends AppCompatActivity {
+public class SimpleLocationActivity extends AppCompatActivity {
 
     private static final String TAG = "LOCATION_TRACKING";
     private FusedLocationProviderClient fusedLocationClient;
@@ -39,18 +40,18 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
         public void run() {
             String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
             
-            Log.e(TAG, "++++++++++++++++++++++++++++++++++++++++++++++++");
-            Log.e(TAG, "MODE: SCREEN_ON_LOCATION_FETCH");
+            Log.e(TAG, "------------------------------------------------");
+            Log.e(TAG, "MODE: SIMPLE_LOCATION_FETCH");
             Log.e(TAG, "TIME: " + time);
             
             if (lastKnownLocation != null) {
                 Log.e(TAG, "DATA: Lat: " + lastKnownLocation.getLatitude() + ", Lng: " + lastKnownLocation.getLongitude());
-                statusText.setText("Screen Active:\nLat: " + lastKnownLocation.getLatitude() + "\nLng: " + lastKnownLocation.getLongitude() + "\nTime: " + time);
+                statusText.setText("Lat: " + lastKnownLocation.getLatitude() + "\nLng: " + lastKnownLocation.getLongitude() + "\nLast Updated: " + time);
             } else {
-                Log.e(TAG, "DATA: Searching for fix...");
-                statusText.setText("Screen Active - Searching...\nTime: " + time);
+                Log.e(TAG, "DATA: Waiting for location fix (Check GPS/Internet)");
+                statusText.setText("Searching...\n(Ensure GPS is enabled)\nTime: " + time);
             }
-            Log.e(TAG, "++++++++++++++++++++++++++++++++++++++++++++++++");
+            Log.e(TAG, "------------------------------------------------");
             
             repeatLogHandler.postDelayed(this, 2000);
         }
@@ -59,11 +60,20 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_screen_on_fetch);
-        Log.e(TAG, "ScreenOnFetchActivity: Created");
+        setContentView(R.layout.activity_simple_location);
+        Log.e(TAG, "SimpleLocationActivity: Started");
 
         statusText = findViewById(R.id.statusText);
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        startLocationUpdates();
+        repeatLogHandler.post(repeatLogRunnable);
+    }
+
+    private void startLocationUpdates() {
+        LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000)
+                .setMinUpdateIntervalMillis(1000)
+                .build();
 
         locationCallback = new LocationCallback() {
             @Override
@@ -71,39 +81,22 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
                 lastKnownLocation = locationResult.getLastLocation();
             }
         };
-    }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.e(TAG, "ScreenOnFetchActivity: Resumed - Starting heartbeats");
-        startLocationUpdates();
-        repeatLogHandler.post(repeatLogRunnable);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        Log.e(TAG, "ScreenOnFetchActivity: Paused - Stopping heartbeats");
-        stopLocationUpdates();
-        repeatLogHandler.removeCallbacks(repeatLogRunnable);
-    }
-
-    private void startLocationUpdates() {
-        LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000)
-                .setMinUpdateIntervalMillis(1000)
-                .build();
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
         } else {
-            Toast.makeText(this, "Permission required", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
             finish();
         }
     }
 
-    private void stopLocationUpdates() {
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        repeatLogHandler.removeCallbacks(repeatLogRunnable);
         if (fusedLocationClient != null && locationCallback != null) {
             fusedLocationClient.removeLocationUpdates(locationCallback);
         }
+        Log.e(TAG, "SimpleLocationActivity: Stopped");
     }
 }

@@ -1,4 +1,4 @@
-package com.example.locationsdk;
+package com.example.bmc_dian.loc;
 
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
@@ -17,12 +17,13 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
+import com.example.bmc_dian.R;
+
 import java.io.File;
 
 public class BackgroundFetchActivity extends AppCompatActivity {
 
     public static final String TAG = "LOCATION_TRACKING";
-    private Button btnStartService, btnPauseService, btnResumeService, btnStopService;
     private TextView statusText;
     private LocationDbHelper dbHelper;
 
@@ -47,10 +48,10 @@ public class BackgroundFetchActivity extends AppCompatActivity {
         setContentView(R.layout.activity_background_fetch);
         dbHelper = new LocationDbHelper(this);
 
-        btnStartService = findViewById(R.id.btnStartService);
-        btnPauseService = findViewById(R.id.btnPauseService);
-        btnResumeService = findViewById(R.id.btnResumeService);
-        btnStopService = findViewById(R.id.btnStopService);
+        Button btnStartService = findViewById(R.id.btnStartService);
+        Button btnPauseService = findViewById(R.id.btnPauseService);
+        Button btnResumeService = findViewById(R.id.btnResumeService);
+        Button btnStopService = findViewById(R.id.btnStopService);
         
         Button btnViewLogs = findViewById(R.id.btnViewLogs);
         Button btnClearLogs = findViewById(R.id.btnClearLogs);
@@ -60,7 +61,7 @@ public class BackgroundFetchActivity extends AppCompatActivity {
         btnStartService.setOnClickListener(v -> startMyService());
         btnPauseService.setOnClickListener(v -> sendActionToService(LocationService.ACTION_PAUSE));
         btnResumeService.setOnClickListener(v -> sendActionToService(LocationService.ACTION_RESUME));
-        btnStopService.setOnClickListener(v -> stopMyService());
+        btnStopService.setOnClickListener(v -> sendActionToService(LocationService.ACTION_STOP));
 
         btnViewLogs.setOnClickListener(v -> dumpDatabaseLogs());
         
@@ -124,10 +125,6 @@ public class BackgroundFetchActivity extends AppCompatActivity {
         Intent intent = new Intent(this, LocationService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent);
         else startService(intent);
-    }
-
-    private void stopMyService() {
-        stopService(new Intent(this, LocationService.class));
     }
 
     @Override

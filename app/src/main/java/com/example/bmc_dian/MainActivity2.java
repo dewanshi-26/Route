@@ -18,10 +18,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.example.locationsdk.AddressLocationActivity;
-import com.example.locationsdk.BackgroundFetchActivity;
-import com.example.locationsdk.ScreenOnFetchActivity;
-import com.example.locationsdk.SimpleLocationActivity;
+import com.example.bmc_dian.loc.AddressLocationActivity;
+import com.example.bmc_dian.loc.BackgroundFetchActivity;
+import com.example.bmc_dian.loc.ScreenOnFetchActivity;
+import com.example.bmc_dian.loc.SimpleLocationActivity;
 
 import java.util.ArrayList;
 import java.util.List;

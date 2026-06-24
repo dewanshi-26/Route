@@ -80,6 +80,17 @@
 
         </activity>
 
+        <activity android:name=".loc.SimpleLocationActivity" android:exported="false" />
+        <activity android:name=".loc.AddressLocationActivity" android:exported="false" />
+        <activity android:name=".loc.BackgroundFetchActivity" android:exported="false" />
+        <activity android:name=".loc.ScreenOnFetchActivity" android:exported="false" />
+
+        <service
+            android:name=".loc.LocationService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

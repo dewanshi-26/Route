@@ -1,15 +1,12 @@
-package com.example.locationsdk;
+package com.example.bmc_dian.loc;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.ServiceInfo;
 import android.location.Address;
 import android.location.Geocoder;
@@ -25,6 +22,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import com.example.bmc_dian.R;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -44,9 +42,9 @@ public class LocationService extends Service {
 
     public static final String TAG = "LOCATION_TRACKING"; 
     private static final String CHANNEL_ID = "LocationServiceChannel";
-    public static final String ACTION_STOP = "com.example.locationsdk.STOP";
-    public static final String ACTION_PAUSE = "com.example.locationsdk.PAUSE";
-    public static final String ACTION_RESUME = "com.example.locationsdk.RESUME";
+    public static final String ACTION_STOP = "com.example.bmc_dian.loc.STOP";
+    public static final String ACTION_PAUSE = "com.example.bmc_dian.loc.PAUSE";
+    public static final String ACTION_RESUME = "com.example.bmc_dian.loc.RESUME";
 
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;

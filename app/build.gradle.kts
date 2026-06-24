@@ -1,7 +1,10 @@
+import org.gradle.api.publish.maven.MavenPublication
+
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.google.services)
     alias(libs.plugins.google.android.libraries.mapsplatform.secrets.gradle.plugin)
+    `maven-publish`
 }
 
 android {
@@ -9,12 +12,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.bmc_dian"
         minSdk = 24
-        targetSdk = 36
-
-        versionCode = 1
-        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -33,10 +31,28 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = "com.example.bmc_dian"
+            artifactId = "location-sdk"
+            version = "1.0.0"
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
 }
 
 dependencies {
-    implementation(project(":locationSdk"))
     implementation(libs.activity.ktx)
     implementation(libs.appcompat)
     implementation(libs.constraintlayout)
