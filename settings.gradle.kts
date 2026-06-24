@@ -24,4 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "NotificationApp"
 include(":app")
-include(":routeSdk")
+include(":locationSdk")

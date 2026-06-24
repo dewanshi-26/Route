@@ -16,7 +16,6 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.routesdk.NotificationSDK;
 import com.google.android.material.textfield.TextInputEditText;
 
 public class MainActivity extends AppCompatActivity {
@@ -42,8 +41,6 @@ public class MainActivity extends AppCompatActivity {
         etMessage = findViewById(R.id.etMessage);
         Button btnSend = findViewById(R.id.btnSend);
 
-        NotificationSDK.init(this);
-
         btnSend.setOnClickListener(v -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -67,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            NotificationSDK.showNotification(this, title, message, MainActivity.class, R.drawable.ringing);
+            Toast.makeText(this, "Notification: " + title + " - " + message, Toast.LENGTH_SHORT).show();
             
             etTitle.setText("");
             etMessage.setText("");

@@ -12,6 +12,7 @@ android {
         applicationId = "com.example.bmc_dian"
         minSdk = 24
         targetSdk = 36
+
         versionCode = 1
         versionName = "1.0"
 
@@ -35,12 +36,12 @@ android {
 }
 
 dependencies {
-    implementation(project(":routeSdk"))
+    implementation(project(":locationSdk"))
     implementation(libs.activity.ktx)
     implementation(libs.appcompat)
     implementation(libs.constraintlayout)
     implementation(libs.material)
-    implementation("com.google.firebase:firebase-messaging:24.1.0")
+    implementation(libs.firebase.messaging)
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
     testImplementation(libs.junit)

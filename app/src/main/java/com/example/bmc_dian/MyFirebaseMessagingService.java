@@ -1,8 +1,8 @@
 package com.example.bmc_dian;
 
+import android.util.Log;
 import androidx.annotation.NonNull;
 
-import com.example.routesdk.NotificationSDK;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -30,7 +30,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         if (message != null && !message.isEmpty()) {
-            NotificationSDK.showNotification(this, title, message, MainActivity.class, R.drawable.ringing);
+            Log.d("FCM", "Received message: " + title + " - " + message);
         }
     }
 
