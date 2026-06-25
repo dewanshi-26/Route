@@ -1,8 +1,10 @@
 package com.example.bmc_dian.loc;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -61,11 +63,43 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
         locSdk = new LocSdk(this);
     }
 
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//        Log.e(TAG, "ScreenOnFetchActivity: Resumed - Starting heartbeats");
+//        locSdk.startSimpleLocationUpdates(locSdk.getConfig().getInterval(), location -> lastKnownLocation = location);
+//        repeatLogHandler.post(repeatLogRunnable);
+//    }
+
     @Override
     protected void onResume() {
+
         super.onResume();
-        Log.e(TAG, "ScreenOnFetchActivity: Resumed - Starting heartbeats");
-        locSdk.startSimpleLocationUpdates(locSdk.getConfig().getInterval(), location -> lastKnownLocation = location);
+
+        if (!locSdk.hasLocationPermission()) {
+
+            locSdk.requestLocationPermission(this);
+            return;
+        }
+
+        LocationManager locationManager =
+                (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        boolean gpsEnabled =
+                locationManager != null &&
+                        locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+        if (!gpsEnabled) {
+
+            locSdk.requestEnableGps(this);
+            return;
+        }
+
+        locSdk.startSimpleLocationUpdates(
+                locSdk.getConfig().getInterval(),
+                location -> lastKnownLocation = location
+        );
+
         repeatLogHandler.post(repeatLogRunnable);
     }
 
@@ -76,4 +110,27 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
         locSdk.stopLocationUpdates();
         repeatLogHandler.removeCallbacks(repeatLogRunnable);
     }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults
+    ) {
+        super.onRequestPermissionsResult(
+                requestCode,
+                permissions,
+                grantResults
+        );
+
+        if (requestCode == 1001) {
+
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                onResume();
+            }
+        }
+    }
+
 }

@@ -27,6 +27,9 @@ import com.google.android.gms.location.Priority;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import android.location.LocationManager;
+import android.provider.Settings;
+import android.widget.Toast;
 
 public class LocSdk {
 
@@ -43,27 +46,68 @@ public class LocSdk {
 
     /**
      * Get single location update.
-     */
+//     */
+//    @SuppressLint("MissingPermission")
+//    public void getCurrentLocation(LocationUpdateListener listener) {
+//        Log.d(TAG, "getCurrentLocation: Requesting single update");
+//        if (!hasLocationPermission()) {
+//            Log.e(TAG, "getCurrentLocation: Permission not granted");
+//            return;
+//        }
+//
+//        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+//                .addOnSuccessListener(location -> {
+//                    if (location != null) {
+//                        Log.d(TAG, "getCurrentLocation: Success -> Lat: " + location.getLatitude() + ", Lng: " + location.getLongitude());
+//                        if (listener != null) {
+//                            listener.onLocationUpdate(location);
+//                        }
+//                    } else {
+//                        Log.w(TAG, "getCurrentLocation: Received null location");
+//                    }
+//                })
+//                .addOnFailureListener(e -> Log.e(TAG, "getCurrentLocation: Failed -> " + e.getMessage()));
+//    }
+
     @SuppressLint("MissingPermission")
-    public void getCurrentLocation(LocationUpdateListener listener) {
-        Log.d(TAG, "getCurrentLocation: Requesting single update");
+    public void getCurrentLocation(Activity activity, LocationUpdateListener listener) {
+        Log.d(TAG, "Requesting Current Location");
         if (!hasLocationPermission()) {
-            Log.e(TAG, "getCurrentLocation: Permission not granted");
+            Toast.makeText(activity, "Location permission not granted", Toast.LENGTH_LONG).show();
+            requestLocationPermission(activity);
             return;
         }
+        if (!isGpsEnabled()) {
+            Toast.makeText(activity, "GPS is OFF", Toast.LENGTH_LONG).show();
+            requestEnableGps(activity);
+            return;
+        }
+        Toast.makeText(activity, "Fetching current location...", Toast.LENGTH_SHORT).show();
 
-        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+        fusedLocationClient
+                .getCurrentLocation(
+                        Priority.PRIORITY_HIGH_ACCURACY,
+                        null
+                )
                 .addOnSuccessListener(location -> {
+
                     if (location != null) {
-                        Log.d(TAG, "getCurrentLocation: Success -> Lat: " + location.getLatitude() + ", Lng: " + location.getLongitude());
+                        Toast.makeText(activity, "Location Found", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "Lat : " + location.getLatitude() + " Lng : " + location.getLongitude());
                         if (listener != null) {
                             listener.onLocationUpdate(location);
                         }
                     } else {
-                        Log.w(TAG, "getCurrentLocation: Received null location");
+                        Toast.makeText(activity, "Unable to get location", Toast.LENGTH_LONG).show();
                     }
                 })
-                .addOnFailureListener(e -> Log.e(TAG, "getCurrentLocation: Failed -> " + e.getMessage()));
+                .addOnFailureListener(e -> {
+
+                    Toast.makeText(activity, "Location Error : " + e.getMessage(), Toast.LENGTH_LONG
+                    ).show();
+
+                    Log.e(TAG, e.getMessage());
+                });
     }
 
     /**
@@ -232,6 +276,78 @@ public class LocSdk {
 
     public static SDKConfig getConfig() {
         return sdkConfig;
+    }
+
+    /**
+     * GPS Check Method.
+     */
+
+    private boolean isGpsEnabled() {
+        LocationManager locationManager =
+                (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+
+        return locationManager != null &&
+                locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+    }
+
+    /**
+     * GPS Permission Request Method.
+     */
+
+    public void requestLocationPermission(Activity activity) {
+
+        if (!hasLocationPermission()) {
+
+            Toast.makeText(activity, "Location permission is required", Toast.LENGTH_LONG).show();
+
+            ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},
+                    1001
+            );
+        }
+    }
+
+    /**
+     *  GPS Enable DialogGPS Enable Dialog.
+     */
+
+    public void requestEnableGps(Activity activity) {
+
+        if (!isGpsEnabled()) {
+
+            Toast.makeText(activity, "GPS is OFF. Please enable GPS.", Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            activity.startActivity(intent);
+        }
+    }
+
+
+    public void requestAllPermissionsAndStartService(Activity activity) {
+        if (!hasLocationPermission()) {
+            requestLocationPermission(activity);
+            return;
+        }
+
+        if (!isGpsEnabled()) {
+            requestEnableGps(activity);
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
+            if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 3001);
+                return;
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+
+            if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 3002);
+                return;
+            }
+        }
+        startBackgroundService();
     }
 
 }

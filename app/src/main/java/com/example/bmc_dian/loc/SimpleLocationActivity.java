@@ -27,6 +27,9 @@ public class SimpleLocationActivity extends AppCompatActivity {
     private LocSdk locSdk;
     private TextView statusText;
 
+
+    private boolean locationAlreadyFetched = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,15 +40,24 @@ public class SimpleLocationActivity extends AppCompatActivity {
         locSdk = new LocSdk(this);
 
         fetchLocationOnce();
+//        new Handler().postDelayed(
+//                this::fetchLocationOnce,
+//                300
+//        );
     }
 
     private void fetchLocationOnce() {
+        if (locationAlreadyFetched) {
+            return;
+        }
+
         statusText.setText("Fetching location...");
-        locSdk.getCurrentLocation(location -> {
+        locSdk.getCurrentLocation(SimpleLocationActivity.this,
+                location-> {
             if (location != null) {
                 String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
                 String logMsg = "Lat: " + location.getLatitude() + ", Lng: " + location.getLongitude();
-                
+
                 Log.e(TAG, "------------------------------------------------");
                 Log.e(TAG, "MODE: SIMPLE_LOCATION_FETCH (ONCE)");
                 Log.e(TAG, "TIME: " + time);
@@ -66,4 +78,36 @@ public class SimpleLocationActivity extends AppCompatActivity {
         super.onDestroy();
         Log.e(TAG, "SimpleLocationActivity: Stopped");
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (locSdk != null) {
+            fetchLocationOnce();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults
+    ) {
+        super.onRequestPermissionsResult(
+                requestCode,
+                permissions,
+                grantResults
+        );
+
+        if (requestCode == 1001) {
+
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                fetchLocationOnce();
+            }
+        }
+    }
+
 }

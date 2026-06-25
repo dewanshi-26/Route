@@ -209,7 +209,7 @@ public class LocationService extends Service {
                 radius = LocSdk.getConfig().getRadius();
                 interval = LocSdk.getConfig().getInterval();
             }
-            content = String.format("Lat: %.5f, Lng: %.5f | %dm | %.0fm", lat, lng, interval / 60000, radius);
+            content = String.format(Locale.getDefault(), "Lat: %.5f, Lng: %.5f | %dm | %.0fm", lat, lng, interval / 60000, radius);
         }
 
         android.widget.RemoteViews remoteViews = new android.widget.RemoteViews(getPackageName(), R.layout.custom_notification);
@@ -221,6 +221,17 @@ public class LocationService extends Service {
         remoteViewsExpanded.setTextViewText(R.id.txtTitleExpanded, title);
         remoteViewsExpanded.setTextViewText(R.id.txtMessageExpanded, content + "\nStatus: " + (isPaused ? "PAUSED" : "RUNNING"));
         remoteViewsExpanded.setTextViewText(R.id.txtTimeExpanded, time);
+
+        if (LocSdk.getConfig() != null) {
+            if (LocSdk.getConfig().getNotificationColor() != -1) {
+                remoteViews.setInt(R.id.notification_container, "setBackgroundColor", LocSdk.getConfig().getNotificationColor());
+                remoteViewsExpanded.setInt(R.id.notification_container_expanded, "setBackgroundColor", LocSdk.getConfig().getNotificationColor());
+            }
+            if (LocSdk.getConfig().getNotificationImage() != -1) {
+                remoteViews.setImageViewResource(R.id.imgLogo, LocSdk.getConfig().getNotificationImage());
+                remoteViewsExpanded.setImageViewResource(R.id.imgLogoExpanded, LocSdk.getConfig().getNotificationImage());
+            }
+        }
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ringing)
@@ -269,8 +280,22 @@ public class LocationService extends Service {
         remoteViews.setTextViewText(R.id.txtTitle, title);
         remoteViews.setTextViewText(R.id.txtMessage, content);
 
+        if (LocSdk.getConfig() != null) {
+            if (LocSdk.getConfig().getNotificationColor() != -1) {
+                remoteViews.setInt(R.id.notification_container, "setBackgroundColor", LocSdk.getConfig().getNotificationColor());
+            }
+            if (LocSdk.getConfig().getNotificationImage() != -1) {
+                remoteViews.setImageViewResource(R.id.imgLogo, LocSdk.getConfig().getNotificationImage());
+            }
+        }
+
+        int icon = R.drawable.ringing;
+        if (LocSdk.getConfig() != null && LocSdk.getConfig().getNotificationIcon() != -1) {
+            icon = LocSdk.getConfig().getNotificationIcon();
+        }
+
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ringing)
+                .setSmallIcon(icon)
                 .setCustomContentView(remoteViews)
                 .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
                 .setPriority(NotificationCompat.PRIORITY_LOW)
