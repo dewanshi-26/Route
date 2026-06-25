@@ -64,5 +64,4 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
-    implementation("com.sdsmdg.tastytoast:tastytoast:0.1.1")
 }
