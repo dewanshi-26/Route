@@ -40,12 +40,18 @@ public class AddressLocationActivity extends AppCompatActivity {
         statusText = findViewById(R.id.statusText);
         locSdk = new LocSdk(this);
 
-        fetchAddressOnce();
+//        fetchAddressOnce();
+        new Handler().postDelayed(
+                this::fetchAddressOnce,
+                300
+        );
+
     }
 
     private void fetchAddressOnce() {
         statusText.setText("Fetching address...");
-        locSdk.getCurrentLocation(location -> {
+        locSdk.getCurrentLocation(AddressLocationActivity.this,
+                location -> {
             if (location != null) {
                 String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
                 String address = locSdk.getAddressFromLocation(location.getLatitude(), location.getLongitude());
@@ -71,4 +77,36 @@ public class AddressLocationActivity extends AppCompatActivity {
         super.onDestroy();
         Log.e(TAG, "AddressLocationActivity: Stopped");
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (locSdk != null) {
+            fetchAddressOnce();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults
+    ) {
+        super.onRequestPermissionsResult(
+                requestCode,
+                permissions,
+                grantResults
+        );
+
+        if (requestCode == 1001) {
+
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                fetchAddressOnce();
+            }
+        }
+    }
+
 }

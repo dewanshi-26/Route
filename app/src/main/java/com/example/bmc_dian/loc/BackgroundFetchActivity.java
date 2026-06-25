@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
@@ -63,7 +64,15 @@ public class BackgroundFetchActivity extends AppCompatActivity {
 
         statusText = findViewById(R.id.statusText);
 
-        btnStartService.setOnClickListener(v -> locSdk.startBackgroundService());
+//        btnStartService.setOnClickListener(v -> locSdk.startBackgroundService());
+        btnStartService.setOnClickListener(v -> {
+
+            locSdk.requestAllPermissionsAndStartService(
+                    BackgroundFetchActivity.this
+            );
+
+        });
+
         btnPauseService.setOnClickListener(v -> locSdk.sendActionToService(LocationService.ACTION_PAUSE));
         btnResumeService.setOnClickListener(v -> locSdk.sendActionToService(LocationService.ACTION_RESUME));
         btnStopService.setOnClickListener(v -> locSdk.stopBackgroundService());
@@ -90,4 +99,28 @@ public class BackgroundFetchActivity extends AppCompatActivity {
     }
 
     @Override protected void onPause() { super.onPause(); unregisterReceiver(locationReceiver); }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults
+    ) {
+
+        super.onRequestPermissionsResult(
+                requestCode,
+                permissions,
+                grantResults
+        );
+
+        if (requestCode == 1001 ||
+                requestCode == 3001 ||
+                requestCode == 3002) {
+
+            locSdk.requestAllPermissionsAndStartService(
+                    BackgroundFetchActivity.this
+            );
+        }
+    }
+
 }
