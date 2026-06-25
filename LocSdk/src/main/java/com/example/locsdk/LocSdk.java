@@ -1,6 +1,7 @@
 package com.example.locsdk;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -33,6 +34,7 @@ public class LocSdk {
     private final Context context;
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
+    private static SDKConfig sdkConfig = new SDKConfig();
 
     public LocSdk(Context context) {
         this.context = context.getApplicationContext();
@@ -40,8 +42,27 @@ public class LocSdk {
     }
 
     /**
+     * Get single location update.
+     */
+    @SuppressLint("MissingPermission")
+    public void getCurrentLocation(LocationUpdateListener listener) {
+        if (!hasLocationPermission()) {
+            Log.e(TAG, "Location permission not granted");
+            return;
+        }
+
+        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                .addOnSuccessListener(location -> {
+                    if (location != null && listener != null) {
+                        listener.onLocationUpdate(location);
+                    }
+                });
+    }
+
+    /**
      * Start simple location updates.
      */
+    @SuppressLint("MissingPermission")
     public void startSimpleLocationUpdates(long interval, LocationUpdateListener listener) {
         LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, interval)
                 .setMinUpdateIntervalMillis(interval / 2)
@@ -56,7 +77,7 @@ public class LocSdk {
             }
         };
 
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (hasLocationPermission()) {
             fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
         } else {
             Log.e(TAG, "Location permission not granted");
@@ -118,6 +139,60 @@ public class LocSdk {
         context.startService(intent);
     }
 
+    /**
+     * Get all logs from database and print to Logcat.
+     */
+    public void dumpLogs() {
+        LocationDbHelper dbHelper = new LocationDbHelper(context);
+        Log.wtf(TAG, "!!! [DB DUMP] RECOVERING OVERNIGHT HISTORY !!!");
+        android.database.Cursor cursor = dbHelper.getAllLogs();
+        int count = 0;
+        if (cursor != null && cursor.moveToFirst()) {
+            do {
+                @SuppressLint("Range") String date = cursor.getString(cursor.getColumnIndex(LocationDbHelper.COLUMN_DATE));
+                @SuppressLint("Range") String time = cursor.getString(cursor.getColumnIndex(LocationDbHelper.COLUMN_TIME));
+                @SuppressLint("Range") double lat = cursor.getDouble(cursor.getColumnIndex(LocationDbHelper.COLUMN_LAT));
+                @SuppressLint("Range") double lng = cursor.getDouble(cursor.getColumnIndex(LocationDbHelper.COLUMN_LNG));
+                @SuppressLint("Range") String addr = cursor.getString(cursor.getColumnIndex(LocationDbHelper.COLUMN_ADDR));
+                @SuppressLint("Range") String status = cursor.getString(cursor.getColumnIndex(LocationDbHelper.COLUMN_STATUS));
+
+                Log.wtf(TAG, String.format("RECOVERED [%d]: %s %s | %s | Lat: %.6f, Lng: %.6f | Addr: %s",
+                        ++count, date, time, status, lat, lng, addr));
+            } while (cursor.moveToNext());
+            cursor.close();
+        }
+        if (count == 0) Log.wtf(TAG, "!!! [DB DUMP] DATABASE EMPTY !!!");
+        else Log.wtf(TAG, "!!! [DB DUMP] SUCCESS: " + count + " LOGS PRINTED !!!");
+    }
+
+    /**
+     * Share the log file.
+     */
+    public void shareLogFile(Activity activity) {
+        java.io.File logFile = new java.io.File(context.getExternalFilesDir(null), "OvernightLogs.txt");
+        if (!logFile.exists()) {
+            android.widget.Toast.makeText(context, "No log file found yet.", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(context, context.getPackageName() + ".locsdk.fileprovider", logFile);
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_STREAM, uri);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        activity.startActivity(Intent.createChooser(intent, "Export Overnight Logs"));
+    }
+
+    /**
+     * Clear all logs from database and file.
+     */
+    public void clearLogs() {
+        LocationDbHelper dbHelper = new LocationDbHelper(context);
+        dbHelper.clearAllLogs();
+        java.io.File logFile = new java.io.File(context.getExternalFilesDir(null), "OvernightLogs.txt");
+        if(logFile.exists()) logFile.delete();
+        android.widget.Toast.makeText(context, "Database & File Cleared", android.widget.Toast.LENGTH_SHORT).show();
+    }
+
     public interface LocationUpdateListener {
         void onLocationUpdate(Location location);
     }
@@ -126,4 +201,16 @@ public class LocSdk {
         return ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
+
+    public static void initialize(
+            Context context,
+            SDKConfig config
+    ) {
+        sdkConfig = config;
+    }
+
+    public static SDKConfig getConfig() {
+        return sdkConfig;
+    }
+
 }

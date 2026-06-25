@@ -26,30 +26,6 @@ public class SimpleLocationActivity extends AppCompatActivity {
     private static final String TAG = "LOCATION_TRACKING";
     private LocSdk locSdk;
     private TextView statusText;
-    private Location lastKnownLocation;
-    private final Handler repeatLogHandler = new Handler(Looper.getMainLooper());
-
-    public final Runnable repeatLogRunnable = new Runnable() {
-        @Override
-        public void run() {
-            String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
-            
-            Log.e(TAG, "------------------------------------------------");
-            Log.e(TAG, "MODE: SIMPLE_LOCATION_FETCH");
-            Log.e(TAG, "TIME: " + time);
-            
-            if (lastKnownLocation != null) {
-                Log.e(TAG, "DATA: Lat: " + lastKnownLocation.getLatitude() + ", Lng: " + lastKnownLocation.getLongitude());
-                statusText.setText("Lat: " + lastKnownLocation.getLatitude() + "\nLng: " + lastKnownLocation.getLongitude() + "\nLast Updated: " + time);
-            } else {
-                Log.e(TAG, "DATA: Waiting for location fix (Check GPS/Internet)");
-                statusText.setText("Searching...\n(Ensure GPS is enabled)\nTime: " + time);
-            }
-            Log.e(TAG, "------------------------------------------------");
-            
-            repeatLogHandler.postDelayed(this, 2000);
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,17 +36,34 @@ public class SimpleLocationActivity extends AppCompatActivity {
         statusText = findViewById(R.id.statusText);
         locSdk = new LocSdk(this);
 
-        locSdk.startSimpleLocationUpdates(2000, location -> lastKnownLocation = location);
-        repeatLogHandler.post(repeatLogRunnable);
+        fetchLocationOnce();
+    }
+
+    private void fetchLocationOnce() {
+        statusText.setText("Fetching location...");
+        locSdk.getCurrentLocation(location -> {
+            if (location != null) {
+                String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+                String logMsg = "Lat: " + location.getLatitude() + ", Lng: " + location.getLongitude();
+                
+                Log.e(TAG, "------------------------------------------------");
+                Log.e(TAG, "MODE: SIMPLE_LOCATION_FETCH (ONCE)");
+                Log.e(TAG, "TIME: " + time);
+                Log.e(TAG, "DATA: " + logMsg);
+                Log.e(TAG, "------------------------------------------------");
+
+                statusText.setText(logMsg + "\nTime: " + time);
+                Toast.makeText(SimpleLocationActivity.this, "Location Fetched:\n" + logMsg, Toast.LENGTH_LONG).show();
+            } else {
+                statusText.setText("Failed to fetch location.");
+                Toast.makeText(SimpleLocationActivity.this, "Failed to fetch location", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        repeatLogHandler.removeCallbacks(repeatLogRunnable);
-        if (locSdk != null) {
-            locSdk.stopLocationUpdates();
-        }
         Log.e(TAG, "SimpleLocationActivity: Stopped");
     }
 }

@@ -15,6 +15,16 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="location" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.locsdk.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/locsdk_file_paths" />
+        </provider>
     </application>
 
 </manifest>

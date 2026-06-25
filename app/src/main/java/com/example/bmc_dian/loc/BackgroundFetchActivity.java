@@ -68,55 +68,14 @@ public class BackgroundFetchActivity extends AppCompatActivity {
         btnResumeService.setOnClickListener(v -> locSdk.sendActionToService(LocationService.ACTION_RESUME));
         btnStopService.setOnClickListener(v -> locSdk.stopBackgroundService());
 
-        btnViewLogs.setOnClickListener(v -> dumpDatabaseLogs());
+        btnViewLogs.setOnClickListener(v -> locSdk.dumpLogs());
         
-        btnClearLogs.setOnClickListener(v -> {
-            dbHelper.clearAllLogs();
-            File logFile = new File(getExternalFilesDir(null), "OvernightLogs.txt");
-            if(logFile.exists()) logFile.delete();
-            Toast.makeText(this, "Database & File Cleared", Toast.LENGTH_SHORT).show();
-        });
+        btnClearLogs.setOnClickListener(v -> locSdk.clearLogs());
 
         btnViewLogs.setOnLongClickListener(v -> {
-            exportLogFile();
+            locSdk.shareLogFile(this);
             return true;
         });
-    }
-
-    public void exportLogFile() {
-        File logFile = new File(getExternalFilesDir(null), "OvernightLogs.txt");
-        if (!logFile.exists()) {
-            Toast.makeText(this, "No log file found yet.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", logFile);
-        Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.setType("text/plain");
-        intent.putExtra(Intent.EXTRA_STREAM, uri);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        startActivity(Intent.createChooser(intent, "Export Overnight Logs"));
-    }
-
-    public void dumpDatabaseLogs() {
-        Log.wtf(TAG, "!!! [DB DUMP] RECOVERING OVERNIGHT HISTORY !!!");
-        Cursor cursor = dbHelper.getAllLogs();
-        int count = 0;
-        if (cursor != null && cursor.moveToFirst()) {
-            do {
-                @SuppressLint("Range") String date = cursor.getString(cursor.getColumnIndex(LocationDbHelper.COLUMN_DATE));
-                @SuppressLint("Range") String time = cursor.getString(cursor.getColumnIndex(LocationDbHelper.COLUMN_TIME));
-                @SuppressLint("Range") double lat = cursor.getDouble(cursor.getColumnIndex(LocationDbHelper.COLUMN_LAT));
-                @SuppressLint("Range") double lng = cursor.getDouble(cursor.getColumnIndex(LocationDbHelper.COLUMN_LNG));
-                @SuppressLint("Range") String addr = cursor.getString(cursor.getColumnIndex(LocationDbHelper.COLUMN_ADDR));
-                @SuppressLint("Range") String status = cursor.getString(cursor.getColumnIndex(LocationDbHelper.COLUMN_STATUS));
-
-                Log.wtf(TAG, String.format("RECOVERED [%d]: %s %s | %s | Lat: %.6f, Lng: %.6f | Addr: %s", 
-                        ++count, date, time, status, lat, lng, addr));
-            } while (cursor.moveToNext());
-            cursor.close();
-        }
-        if (count == 0) Log.wtf(TAG, "!!! [DB DUMP] DATABASE EMPTY !!!");
-        else Log.wtf(TAG, "!!! [DB DUMP] SUCCESS: " + count + " LOGS PRINTED !!!");
     }
 
     @Override

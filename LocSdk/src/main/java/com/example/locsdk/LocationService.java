@@ -58,7 +58,11 @@ public class LocationService extends Service {
         @Override
         public void run() {
             logCurrentData("OVERNIGHT_LOG_HEARTBEAT");
-            repeatLogHandler.postDelayed(this, 60000); 
+            long interval = 60000;
+            if (LocSdk.getConfig() != null) {
+                interval = LocSdk.getConfig().getInterval();
+            }
+            repeatLogHandler.postDelayed(this, interval); 
         }
     };
 
@@ -86,14 +90,20 @@ public class LocationService extends Service {
         if (lastLocation != null) {
             if (anchorLocation == null) anchorLocation = lastLocation;
 
+            float radius = 50.0f;
+            if (LocSdk.getConfig() != null) {
+                radius = LocSdk.getConfig().getRadius();
+            }
+
             float distance = lastLocation.distanceTo(anchorLocation);
-            String statusStr = (distance <= 50.0) ? "INSIDE 50m (" + String.format("%.1fm", distance) + ")" : "OUTSIDE 50m";
+            String statusStr = (distance <= radius) ? "INSIDE " + radius + "m (" + String.format("%.1fm", distance) + ")" : "OUTSIDE " + radius + "m";
             
             double lat = lastLocation.getLatitude();
             double lng = lastLocation.getLongitude();
 
+            final float finalRadius = radius;
             new Thread(() -> {
-                String addr = (distance <= 50.0) ? getAddressFromLocation(lat, lng) : "Hidden";
+                String addr = (distance <= finalRadius) ? getAddressFromLocation(lat, lng) : "Hidden";
                 
                 String logMsg = String.format("\nDATE: %s\nTIME: %s\nSTATUS: %s\nLAT: %.7f\nLNG: %.7f\nADDR: %s\n", 
                         date, time, statusStr, lat, lng, addr);
@@ -113,7 +123,7 @@ public class LocationService extends Service {
 
                 showProperToast(toastText(time, statusStr, lat, lng, addr));
 
-                updateNotification(lat, lng, time, distance <= 50.0);
+                updateNotification(lat, lng, time, distance <= finalRadius);
             }).start();
 
         } else {
@@ -187,7 +197,20 @@ public class LocationService extends Service {
 
     public void updateNotification(double lat, double lng, String time, boolean inside) {
         String title = "Logging Active (" + time + ")";
-        String content = inside ? String.format("Lat: %.5f, Lng: %.5f | 1min | 50m", lat, lng) : "Outside 50m - Hidden";
+        if (LocSdk.getConfig() != null) {
+            title = LocSdk.getConfig().getNotificationTitle() + " (" + time + ")";
+        }
+        
+        String content = "Outside 50m - Hidden";
+        if (inside) {
+            float radius = 50f;
+            long interval = 30000;
+            if (LocSdk.getConfig() != null) {
+                radius = LocSdk.getConfig().getRadius();
+                interval = LocSdk.getConfig().getInterval();
+            }
+            content = String.format("Lat: %.5f, Lng: %.5f | %dm | %.0fm", lat, lng, interval / 60000, radius);
+        }
 
         android.widget.RemoteViews remoteViews = new android.widget.RemoteViews(getPackageName(), R.layout.custom_notification);
         remoteViews.setTextViewText(R.id.txtTitle, title);
@@ -213,8 +236,15 @@ public class LocationService extends Service {
 
     @SuppressLint("MissingPermission")
     public void startTracking() {
-        LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 30000)
-                .setMinUpdateIntervalMillis(10000)
+        long interval = 30000;
+        long fastestInterval = 10000;
+        if (LocSdk.getConfig() != null) {
+            interval = LocSdk.getConfig().getInterval();
+            fastestInterval = LocSdk.getConfig().getFastestInterval();
+        }
+
+        LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, interval)
+                .setMinUpdateIntervalMillis(fastestInterval)
                 .setMaxUpdateDelayMillis(0)
                 .build();
         fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
@@ -228,9 +258,16 @@ public class LocationService extends Service {
     }
 
     public void startMyForeground() {
+        String title = "Location Service";
+        String content = "Initializing...";
+        if (LocSdk.getConfig() != null) {
+            title = LocSdk.getConfig().getNotificationTitle();
+            content = LocSdk.getConfig().getNotificationContent();
+        }
+
         android.widget.RemoteViews remoteViews = new android.widget.RemoteViews(getPackageName(), R.layout.custom_notification);
-        remoteViews.setTextViewText(R.id.txtTitle, "Location Service");
-        remoteViews.setTextViewText(R.id.txtMessage, "Initializing...");
+        remoteViews.setTextViewText(R.id.txtTitle, title);
+        remoteViews.setTextViewText(R.id.txtMessage, content);
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ringing)

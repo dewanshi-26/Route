@@ -30,32 +30,6 @@ public class AddressLocationActivity extends AppCompatActivity {
     private static final String TAG = "LOCATION_TRACKING";
     private LocSdk locSdk;
     private TextView statusText;
-    private Location lastKnownLocation;
-    private final Handler repeatLogHandler = new Handler(Looper.getMainLooper());
-
-    public final Runnable repeatLogRunnable = new Runnable() {
-        @Override
-        public void run() {
-            String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
-            
-            Log.e(TAG, "================================================");
-            Log.e(TAG, "MODE: ADDRESS_LOCATION_FETCH");
-            Log.e(TAG, "TIME: " + time);
-            
-            if (lastKnownLocation != null) {
-                String address = locSdk.getAddressFromLocation(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
-                Log.e(TAG, "LAT/LNG: " + lastKnownLocation.getLatitude() + ", " + lastKnownLocation.getLongitude());
-                Log.e(TAG, "ADDRESS: " + address);
-                statusText.setText("Address:\n" + address + "\n\nLast updated: " + time);
-            } else {
-                Log.e(TAG, "DATA: Fetching location for address...");
-                statusText.setText("Fetching address...\nTime: " + time);
-            }
-            Log.e(TAG, "================================================");
-            
-            repeatLogHandler.postDelayed(this, 2000);
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,17 +40,35 @@ public class AddressLocationActivity extends AppCompatActivity {
         statusText = findViewById(R.id.statusText);
         locSdk = new LocSdk(this);
 
-        locSdk.startSimpleLocationUpdates(2000, location -> lastKnownLocation = location);
-        repeatLogHandler.post(repeatLogRunnable);
+        fetchAddressOnce();
+    }
+
+    private void fetchAddressOnce() {
+        statusText.setText("Fetching address...");
+        locSdk.getCurrentLocation(location -> {
+            if (location != null) {
+                String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+                String address = locSdk.getAddressFromLocation(location.getLatitude(), location.getLongitude());
+                
+                Log.e(TAG, "================================================");
+                Log.e(TAG, "MODE: ADDRESS_LOCATION_FETCH (ONCE)");
+                Log.e(TAG, "TIME: " + time);
+                Log.e(TAG, "LAT/LNG: " + location.getLatitude() + ", " + location.getLongitude());
+                Log.e(TAG, "ADDRESS: " + address);
+                Log.e(TAG, "================================================");
+
+                statusText.setText("Address:\n" + address + "\n\nTime: " + time);
+                Toast.makeText(AddressLocationActivity.this, "Address Fetched:\n" + address, Toast.LENGTH_LONG).show();
+            } else {
+                statusText.setText("Failed to fetch address.");
+                Toast.makeText(AddressLocationActivity.this, "Failed to fetch address", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        repeatLogHandler.removeCallbacks(repeatLogRunnable);
-        if (locSdk != null) {
-            locSdk.stopLocationUpdates();
-        }
         Log.e(TAG, "AddressLocationActivity: Stopped");
     }
 }

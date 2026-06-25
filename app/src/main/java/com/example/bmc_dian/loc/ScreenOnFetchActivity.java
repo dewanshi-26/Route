@@ -65,7 +65,7 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.e(TAG, "ScreenOnFetchActivity: Resumed - Starting heartbeats");
-        locSdk.startSimpleLocationUpdates(2000, location -> lastKnownLocation = location);
+        locSdk.startSimpleLocationUpdates(locSdk.getConfig().getInterval(), location -> lastKnownLocation = location);
         repeatLogHandler.post(repeatLogRunnable);
     }
 
