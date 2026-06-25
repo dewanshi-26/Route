@@ -46,17 +46,24 @@ public class LocSdk {
      */
     @SuppressLint("MissingPermission")
     public void getCurrentLocation(LocationUpdateListener listener) {
+        Log.d(TAG, "getCurrentLocation: Requesting single update");
         if (!hasLocationPermission()) {
-            Log.e(TAG, "Location permission not granted");
+            Log.e(TAG, "getCurrentLocation: Permission not granted");
             return;
         }
 
         fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                 .addOnSuccessListener(location -> {
-                    if (location != null && listener != null) {
-                        listener.onLocationUpdate(location);
+                    if (location != null) {
+                        Log.d(TAG, "getCurrentLocation: Success -> Lat: " + location.getLatitude() + ", Lng: " + location.getLongitude());
+                        if (listener != null) {
+                            listener.onLocationUpdate(location);
+                        }
+                    } else {
+                        Log.w(TAG, "getCurrentLocation: Received null location");
                     }
-                });
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "getCurrentLocation: Failed -> " + e.getMessage()));
     }
 
     /**
@@ -64,6 +71,7 @@ public class LocSdk {
      */
     @SuppressLint("MissingPermission")
     public void startSimpleLocationUpdates(long interval, LocationUpdateListener listener) {
+        Log.d(TAG, "startSimpleLocationUpdates: Interval = " + interval + "ms");
         LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, interval)
                 .setMinUpdateIntervalMillis(interval / 2)
                 .build();
@@ -71,8 +79,12 @@ public class LocSdk {
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
-                if (listener != null) {
-                    listener.onLocationUpdate(locationResult.getLastLocation());
+                Location location = locationResult.getLastLocation();
+                if (location != null) {
+                    Log.d(TAG, "onLocationResult: Lat: " + location.getLatitude() + ", Lng: " + location.getLongitude());
+                    if (listener != null) {
+                        listener.onLocationUpdate(location);
+                    }
                 }
             }
         };
@@ -80,7 +92,7 @@ public class LocSdk {
         if (hasLocationPermission()) {
             fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
         } else {
-            Log.e(TAG, "Location permission not granted");
+            Log.e(TAG, "startSimpleLocationUpdates: Permission not granted");
         }
     }
 
@@ -88,6 +100,7 @@ public class LocSdk {
      * Stop location updates.
      */
     public void stopLocationUpdates() {
+        Log.d(TAG, "stopLocationUpdates: Stopping updates");
         if (fusedLocationClient != null && locationCallback != null) {
             fusedLocationClient.removeLocationUpdates(locationCallback);
         }
@@ -97,15 +110,20 @@ public class LocSdk {
      * Get address from coordinates.
      */
     public String getAddressFromLocation(double lat, double lng) {
+        Log.d(TAG, "getAddressFromLocation: Fetching for Lat: " + lat + ", Lng: " + lng);
         Geocoder geocoder = new Geocoder(context, Locale.getDefault());
         try {
             List<Address> addresses = geocoder.getFromLocation(lat, lng, 1);
             if (addresses != null && !addresses.isEmpty()) {
-                return addresses.get(0).getAddressLine(0);
+                String address = addresses.get(0).getAddressLine(0);
+                Log.d(TAG, "getAddressFromLocation: Found -> " + address);
+                return address;
             }
         } catch (IOException e) {
+            Log.e(TAG, "getAddressFromLocation: Geocoder Error -> " + e.getMessage());
             return "Geocoder Error: " + e.getMessage();
         }
+        Log.w(TAG, "getAddressFromLocation: Address not found");
         return "Address not found";
     }
 
@@ -113,6 +131,7 @@ public class LocSdk {
      * Start background location service.
      */
     public void startBackgroundService() {
+        Log.i(TAG, "startBackgroundService: Requesting service start");
         Intent intent = new Intent(context, LocationService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent);
@@ -125,6 +144,7 @@ public class LocSdk {
      * Stop background location service.
      */
     public void stopBackgroundService() {
+        Log.i(TAG, "stopBackgroundService: Requesting service stop");
         Intent intent = new Intent(context, LocationService.class);
         intent.setAction(LocationService.ACTION_STOP);
         context.startService(intent);
@@ -134,6 +154,7 @@ public class LocSdk {
      * Send action to background service (PAUSE/RESUME).
      */
     public void sendActionToService(String action) {
+        Log.i(TAG, "sendActionToService: Sending Action -> " + action);
         Intent intent = new Intent(context, LocationService.class);
         intent.setAction(action);
         context.startService(intent);
