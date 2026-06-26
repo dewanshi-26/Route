@@ -80,10 +80,12 @@ public class LocationService extends Service {
         String date = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(now);
         String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(now);
         
-        Log.i(TAG, "!!! [LOG TRIGGER] Source: " + triggerSource + " | Time: " + time);
+        Log.e(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+        Log.e(TAG, "!!! [LOG TRIGGER] Source: " + triggerSource + " | Time: " + time);
 
         if (isPaused) {
             Log.wtf(TAG, "!!! [DATA LOG] STATUS: PAUSED at " + time);
+            Log.e(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
             return;
         }
 
@@ -91,8 +93,10 @@ public class LocationService extends Service {
             if (anchorLocation == null) anchorLocation = lastLocation;
 
             float radius = 50.0f;
+            long interval = 30000;
             if (LocSdk.getConfig() != null) {
                 radius = LocSdk.getConfig().getRadius();
+                interval = LocSdk.getConfig().getInterval();
             }
 
             float distance = lastLocation.distanceTo(anchorLocation);
@@ -102,14 +106,16 @@ public class LocationService extends Service {
             double lng = lastLocation.getLongitude();
 
             final float finalRadius = radius;
+            final long finalInterval = interval;
             new Thread(() -> {
                 String addr = (distance <= finalRadius) ? getAddressFromLocation(lat, lng) : "Hidden";
                 
-                String logMsg = String.format("\nDATE: %s\nTIME: %s\nSTATUS: %s\nLAT: %.7f\nLNG: %.7f\nADDR: %s\n", 
-                        date, time, statusStr, lat, lng, addr);
+                String logMsg = String.format("\nDATE: %s\nTIME: %s\nSTATUS: %s\nLAT: %.7f\nLNG: %.7f\nADDR: %s\nINTERVAL: %s\n", 
+                        date, time, statusStr, lat, lng, addr, formatInterval(finalInterval));
                 Log.wtf(TAG, "------------------------------------------------");
                 Log.wtf(TAG, "!!! [OVERNIGHT DATA BLOCK] !!!" + logMsg);
                 Log.wtf(TAG, "------------------------------------------------");
+                Log.e(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 
                 dbHelper.insertLog(date, time, lat, lng, addr, statusStr);
                 saveLogToFile(logMsg);
@@ -128,6 +134,15 @@ public class LocationService extends Service {
 
         } else {
             Log.wtf(TAG, "!!! [DATA LOG] " + time + " : Still waiting for GPS Signal...");
+            Log.e(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+        }
+    }
+
+    private String formatInterval(long millis) {
+        if (millis >= 60000) {
+            return (millis / 60000) + " min";
+        } else {
+            return (millis / 1000) + " sec";
         }
     }
 
@@ -157,6 +172,10 @@ public class LocationService extends Service {
         super.onCreate();
         dbHelper = new LocationDbHelper(this);
         
+        Log.wtf(TAG, "################################################");
+        Log.wtf(TAG, "!!! [SERVICE] STARTING LOCATION SERVICE !!!");
+        Log.wtf(TAG, "################################################");
+
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LocationApp:WakeLock");
         if (!wakeLock.isHeld()) wakeLock.acquire();
@@ -165,7 +184,10 @@ public class LocationService extends Service {
         
         try {
             fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
-                if (location != null) lastLocation = location;
+                if (location != null) {
+                    lastLocation = location;
+                    Log.d(TAG, "Initial Location obtained: " + location.getLatitude() + ", " + location.getLongitude());
+                }
             });
         } catch (SecurityException ignored) {}
 
@@ -183,7 +205,7 @@ public class LocationService extends Service {
         startTracking();
         repeatLogHandler.post(repeatLogRunnable);
         repeatLogHandler.post(pcConnectionCheck);
-        Log.wtf(TAG, "!!! [SERVICE] SYSTEM STARTED - Logcat visibility check initiated !!!");
+        Log.wtf(TAG, "!!! [SERVICE] SYSTEM RUNNING - Heartbeats active !!!");
     }
 
     public String getAddressFromLocation(double lat, double lng) {
@@ -201,15 +223,16 @@ public class LocationService extends Service {
             title = LocSdk.getConfig().getNotificationTitle() + " (" + time + ")";
         }
         
-        String content = "Outside 50m - Hidden";
+        float radius = 50f;
+        long interval = 30000;
+        if (LocSdk.getConfig() != null) {
+            radius = LocSdk.getConfig().getRadius();
+            interval = LocSdk.getConfig().getInterval();
+        }
+
+        String content = String.format(Locale.getDefault(), "Outside %.0fm - Hidden | %s", radius, formatInterval(interval));
         if (inside) {
-            float radius = 50f;
-            long interval = 30000;
-            if (LocSdk.getConfig() != null) {
-                radius = LocSdk.getConfig().getRadius();
-                interval = LocSdk.getConfig().getInterval();
-            }
-            content = String.format(Locale.getDefault(), "Lat: %.5f, Lng: %.5f | %dm | %.0fm", lat, lng, interval / 60000, radius);
+            content = String.format(Locale.getDefault(), "Lat: %.4f, Lng: %.4f | %s | %.0fm", lat, lng, formatInterval(interval), radius);
         }
 
         android.widget.RemoteViews remoteViews = new android.widget.RemoteViews(getPackageName(), R.layout.custom_notification);
@@ -233,8 +256,13 @@ public class LocationService extends Service {
             }
         }
 
+        int icon = R.drawable.ringing;
+        if (LocSdk.getConfig() != null && LocSdk.getConfig().getNotificationIcon() != -1) {
+            icon = LocSdk.getConfig().getNotificationIcon();
+        }
+
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ringing)
+                .setSmallIcon(icon)
                 .setCustomContentView(remoteViews)
                 .setCustomBigContentView(remoteViewsExpanded)
                 .setStyle(new NotificationCompat.DecoratedCustomViewStyle())

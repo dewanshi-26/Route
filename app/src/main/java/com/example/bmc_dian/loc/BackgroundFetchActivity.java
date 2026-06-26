@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -101,25 +102,36 @@ public class BackgroundFetchActivity extends AppCompatActivity {
     @Override protected void onPause() { super.onPause(); unregisterReceiver(locationReceiver); }
 
     @Override
-    public void onRequestPermissionsResult(
-            int requestCode,
-            @NonNull String[] permissions,
-            @NonNull int[] grantResults
-    ) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
-        super.onRequestPermissionsResult(
-                requestCode,
-                permissions,
-                grantResults
-        );
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (grantResults.length == 0) {
+            return;
+        }
 
-        if (requestCode == 1001 ||
-                requestCode == 3001 ||
-                requestCode == 3002) {
+        if (requestCode == 1001) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                locSdk.requestAllPermissionsAndStartService(this);
+            } else {
+                Toast.makeText(this, "Location permission denied", Toast.LENGTH_LONG).show();
+            }
+        }
 
-            locSdk.requestAllPermissionsAndStartService(
-                    BackgroundFetchActivity.this
-            );
+        else if (requestCode == 3001) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                locSdk.requestAllPermissionsAndStartService(this);
+            } else {
+                Toast.makeText(this, "Notification permission denied", Toast.LENGTH_LONG).show();
+            }
+        }
+
+        else if (requestCode == 3002) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Background location granted", Toast.LENGTH_SHORT).show();
+                locSdk.startBackgroundService();
+            } else {
+                Toast.makeText(this, "Please choose 'Allow all the time' to start tracking", Toast.LENGTH_LONG).show();
+            }
         }
     }
 

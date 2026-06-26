@@ -34,6 +34,13 @@ import android.widget.Toast;
 public class LocSdk {
 
     private static final String TAG = "LocSdk";
+
+    static {
+        Log.wtf(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        Log.wtf(TAG, "!!! LocSdk CLASS LOADED - SDK READY !!!");
+        Log.wtf(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    }
+
     private final Context context;
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
@@ -42,6 +49,10 @@ public class LocSdk {
     public LocSdk(Context context) {
         this.context = context.getApplicationContext();
         this.fusedLocationClient = LocationServices.getFusedLocationProviderClient(this.context);
+        Log.wtf(TAG, "************************************************");
+        Log.wtf(TAG, "!!! [LocSdk] SDK INITIALIZED !!!");
+        Log.wtf(TAG, "!!! [LocSdk] VERSION: 1.0.0");
+        Log.wtf(TAG, "************************************************");
     }
 
     /**
@@ -267,11 +278,21 @@ public class LocSdk {
                 || ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
+    public boolean hasBackgroundLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        }
+        return true;
+    }
+
     public static void initialize(
             Context context,
             SDKConfig config
     ) {
         sdkConfig = config;
+        Log.wtf(TAG, "!!! [LocSdk] SDK CONFIGURED MANUALLY !!!");
+        Log.wtf(TAG, "Interval: " + config.getInterval() + "ms");
+        Log.wtf(TAG, "Radius: " + config.getRadius() + "m");
     }
 
     public static SDKConfig getConfig() {
@@ -322,31 +343,55 @@ public class LocSdk {
 
 
     public void requestAllPermissionsAndStartService(Activity activity) {
+        Log.d(TAG, "requestAllPermissionsAndStartService: Checking permissions...");
+
         if (!hasLocationPermission()) {
+            Log.w(TAG, "requestAllPermissionsAndStartService: Missing Fine/Coarse Location");
             requestLocationPermission(activity);
             return;
         }
 
         if (!isGpsEnabled()) {
+            Log.w(TAG, "requestAllPermissionsAndStartService: GPS is OFF");
             requestEnableGps(activity);
             return;
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-
-            if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 3001);
+            if (ActivityCompat.checkSelfPermission(
+                    activity,
+                    Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED) {
+                Log.w(TAG, "requestAllPermissionsAndStartService: Missing Notification Permission");
+                ActivityCompat.requestPermissions(
+                        activity,
+                        new String[]{
+                                Manifest.permission.POST_NOTIFICATIONS
+                        },
+                        3001
+                );
                 return;
             }
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (!hasBackgroundLocationPermission()) {
+                Log.w(TAG, "requestAllPermissionsAndStartService: Missing Background Location (Allow all the time)");
+                Toast.makeText(activity, "Please select 'Allow all the time' to enable background tracking", Toast.LENGTH_LONG).show();
 
-            if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 3002);
+                ActivityCompat.requestPermissions(
+                        activity,
+                        new String[]{
+                                Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                        },
+                        3002
+                );
                 return;
             }
         }
+
+        Log.i(TAG, "requestAllPermissionsAndStartService: All permissions OK. Starting service.");
+        Toast.makeText(activity, "All permissions granted. Starting service...", Toast.LENGTH_SHORT).show();
         startBackgroundService();
     }
 

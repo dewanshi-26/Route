@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -41,15 +42,19 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
             Log.e(TAG, "TIME: " + time);
             
             if (lastKnownLocation != null) {
-                Log.e(TAG, "DATA: Lat: " + lastKnownLocation.getLatitude() + ", Lng: " + lastKnownLocation.getLongitude());
-                statusText.setText("Screen Active:\nLat: " + lastKnownLocation.getLatitude() + "\nLng: " + lastKnownLocation.getLongitude() + "\nTime: " + time);
+                String latLng = String.format(Locale.getDefault(), "Lat: %.6f, Lng: %.6f", lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+                Log.e(TAG, "DATA: " + latLng);
+                statusText.setText("Screen Active:\n" + latLng + "\nTime: " + time);
+                Toast.makeText(ScreenOnFetchActivity.this, "Location Updated: " + time, Toast.LENGTH_SHORT).show();
             } else {
                 Log.e(TAG, "DATA: Searching for fix...");
                 statusText.setText("Screen Active - Searching...\nTime: " + time);
             }
             Log.e(TAG, "++++++++++++++++++++++++++++++++++++++++++++++++");
             
-            repeatLogHandler.postDelayed(this, 2000);
+            long delay = 2000;
+            if (locSdk.getConfig() != null) delay = locSdk.getConfig().getInterval();
+            repeatLogHandler.postDelayed(this, delay);
         }
     };
 
@@ -73,33 +78,45 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
 
     @Override
     protected void onResume() {
-
         super.onResume();
+        checkPermissionsAndStart();
+    }
 
+    private void checkPermissionsAndStart() {
         if (!locSdk.hasLocationPermission()) {
-
+            Log.w(TAG, "ScreenOnFetch: Missing Location Permission");
             locSdk.requestLocationPermission(this);
             return;
         }
 
-        LocationManager locationManager =
-                (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
-        boolean gpsEnabled =
-                locationManager != null &&
-                        locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        boolean gpsEnabled = locationManager != null && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
 
         if (!gpsEnabled) {
-
+            Log.w(TAG, "ScreenOnFetch: GPS is OFF");
             locSdk.requestEnableGps(this);
             return;
         }
 
+        // Check for Background permission even for screen-on if user wants consistency
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (!locSdk.hasBackgroundLocationPermission()) {
+                Log.w(TAG, "ScreenOnFetch: Missing Background Permission");
+                Toast.makeText(this, "Please select 'Allow all the time' for consistent tracking", Toast.LENGTH_LONG).show();
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 3002);
+                return;
+            }
+        }
+
+        Log.i(TAG, "ScreenOnFetch: Starting updates");
+        Toast.makeText(this, "Screen tracking started", Toast.LENGTH_SHORT).show();
+        
         locSdk.startSimpleLocationUpdates(
                 locSdk.getConfig().getInterval(),
                 location -> lastKnownLocation = location
         );
 
+        repeatLogHandler.removeCallbacks(repeatLogRunnable);
         repeatLogHandler.post(repeatLogRunnable);
     }
 
@@ -123,13 +140,12 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
                 grantResults
         );
 
-        if (requestCode == 1001) {
-
-            if (grantResults.length > 0 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                onResume();
-            }
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Permission granted for request: " + requestCode);
+            checkPermissionsAndStart();
+        } else {
+            Log.e(TAG, "Permission denied for request: " + requestCode);
+            Toast.makeText(this, "Permission required for tracking", Toast.LENGTH_SHORT).show();
         }
     }
 
