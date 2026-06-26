@@ -28,8 +28,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.provider.Settings;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
 
 public class LocSdk {
 
@@ -316,15 +319,43 @@ public class LocSdk {
      */
 
     public void requestLocationPermission(Activity activity) {
+        if (hasLocationPermission()) return;
 
-        if (!hasLocationPermission()) {
+        String prefName = "permission_pref";
+        String key = "location_denied_count";
+        int count = context.getSharedPreferences(prefName, Context.MODE_PRIVATE).getInt(key, 0);
 
-            Toast.makeText(activity, "Location permission is required", Toast.LENGTH_LONG).show();
-
-            ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},
-                    1001
-            );
+        if (count >= 2) {
+            showCustomSettingsDialog(activity, "Location permission is required to fetch your location. Please enable it in app settings.");
+            return;
         }
+
+        Log.d(TAG, "Requesting Location Permission, Attempt: " + (count + 1));
+        ActivityCompat.requestPermissions(activity, 
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                1001
+        );
+    }
+
+    public void incrementPermissionDenialCount() {
+        String prefName = "permission_pref";
+        String key = "location_denied_count";
+        int count = context.getSharedPreferences(prefName, Context.MODE_PRIVATE).getInt(key, 0);
+        context.getSharedPreferences(prefName, Context.MODE_PRIVATE).edit().putInt(key, count + 1).apply();
+    }
+
+    public void showCustomSettingsDialog(Activity activity, String message) {
+        new AlertDialog.Builder(activity)
+                .setTitle("Permission Required")
+                .setMessage(message)
+                .setPositiveButton("Go to Settings", (dialog, which) -> {
+                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    Uri uri = Uri.fromParts("package", activity.getPackageName(), null);
+                    intent.setData(uri);
+                    activity.startActivity(intent);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     /**
@@ -342,50 +373,69 @@ public class LocSdk {
     }
 
 
+    public void requestBackgroundLocationPermission(Activity activity) {
+        if (hasBackgroundLocationPermission()) return;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            String key = "bg_loc_denied_count";
+            int count = context.getSharedPreferences("permission_pref", Context.MODE_PRIVATE).getInt(key, 0);
+            if (count >= 2) {
+                showCustomSettingsDialog(activity, "Background tracking requires 'Allow all the time' permission. Please enable it in app settings.");
+            } else {
+                Toast.makeText(activity, "Please select 'Allow all the time' to enable background tracking", Toast.LENGTH_LONG).show();
+                ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 3002);
+            }
+        }
+    }
+
+    public void requestNotificationPermission(Activity activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                String key = "notif_denied_count";
+                int count = context.getSharedPreferences("permission_pref", Context.MODE_PRIVATE).getInt(key, 0);
+                if (count >= 2) {
+                    showCustomSettingsDialog(activity, "Notification permission is required to show the tracking status. Please enable it in app settings.");
+                } else {
+                    ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 3001);
+                }
+            }
+        }
+    }
+
     public void requestAllPermissionsAndStartService(Activity activity) {
         Log.d(TAG, "requestAllPermissionsAndStartService: Checking permissions...");
 
+        // 1. Location Permission
         if (!hasLocationPermission()) {
             Log.w(TAG, "requestAllPermissionsAndStartService: Missing Fine/Coarse Location");
             requestLocationPermission(activity);
             return;
         }
 
+        // 2. GPS Check
         if (!isGpsEnabled()) {
             Log.w(TAG, "requestAllPermissionsAndStartService: GPS is OFF");
             requestEnableGps(activity);
             return;
         }
 
+        // 3. Notification Permission (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(
                     activity,
                     Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED) {
                 Log.w(TAG, "requestAllPermissionsAndStartService: Missing Notification Permission");
-                ActivityCompat.requestPermissions(
-                        activity,
-                        new String[]{
-                                Manifest.permission.POST_NOTIFICATIONS
-                        },
-                        3001
-                );
+                requestNotificationPermission(activity);
                 return;
             }
         }
 
+        // 4. Background Location Permission (Android 10+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (!hasBackgroundLocationPermission()) {
-                Log.w(TAG, "requestAllPermissionsAndStartService: Missing Background Location (Allow all the time)");
-                Toast.makeText(activity, "Please select 'Allow all the time' to enable background tracking", Toast.LENGTH_LONG).show();
-
-                ActivityCompat.requestPermissions(
-                        activity,
-                        new String[]{
-                                Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                        },
-                        3002
-                );
+                Log.w(TAG, "requestAllPermissionsAndStartService: Missing Background Location");
+                requestBackgroundLocationPermission(activity);
                 return;
             }
         }

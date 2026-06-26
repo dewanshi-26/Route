@@ -102,8 +102,7 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (!locSdk.hasBackgroundLocationPermission()) {
                 Log.w(TAG, "ScreenOnFetch: Missing Background Permission");
-                Toast.makeText(this, "Please select 'Allow all the time' for consistent tracking", Toast.LENGTH_LONG).show();
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 3002);
+                locSdk.requestBackgroundLocationPermission(this);
                 return;
             }
         }
@@ -140,11 +139,22 @@ public class ScreenOnFetchActivity extends AppCompatActivity {
                 grantResults
         );
 
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+
+        if (granted) {
             Log.d(TAG, "Permission granted for request: " + requestCode);
             checkPermissionsAndStart();
         } else {
             Log.e(TAG, "Permission denied for request: " + requestCode);
+            String key = "";
+            if (requestCode == 1001) key = "location_denied_count";
+            else if (requestCode == 3002) key = "bg_loc_denied_count";
+            
+            if (!key.isEmpty()) {
+                android.content.SharedPreferences prefs = getSharedPreferences("permission_pref", Context.MODE_PRIVATE);
+                int count = prefs.getInt(key, 0);
+                prefs.edit().putInt(key, count + 1).apply();
+            }
             Toast.makeText(this, "Permission required for tracking", Toast.LENGTH_SHORT).show();
         }
     }

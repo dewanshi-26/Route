@@ -103,36 +103,39 @@ public class BackgroundFetchActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (grantResults.length == 0) {
-            return;
-        }
+        
+        boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
 
         if (requestCode == 1001) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (granted) {
                 locSdk.requestAllPermissionsAndStartService(this);
             } else {
-                Toast.makeText(this, "Location permission denied", Toast.LENGTH_LONG).show();
+                updateDenialCount("location_denied_count");
+                Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
             }
-        }
-
-        else if (requestCode == 3001) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        } else if (requestCode == 3001) {
+            if (granted) {
                 locSdk.requestAllPermissionsAndStartService(this);
             } else {
-                Toast.makeText(this, "Notification permission denied", Toast.LENGTH_LONG).show();
+                updateDenialCount("notif_denied_count");
+                Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show();
             }
-        }
-
-        else if (requestCode == 3002) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        } else if (requestCode == 3002) {
+            if (granted) {
                 Toast.makeText(this, "Background location granted", Toast.LENGTH_SHORT).show();
-                locSdk.startBackgroundService();
+                locSdk.requestAllPermissionsAndStartService(this);
             } else {
+                updateDenialCount("bg_loc_denied_count");
                 Toast.makeText(this, "Please choose 'Allow all the time' to start tracking", Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    private void updateDenialCount(String key) {
+        android.content.SharedPreferences prefs = getSharedPreferences("permission_pref", Context.MODE_PRIVATE);
+        int count = prefs.getInt(key, 0);
+        prefs.edit().putInt(key, count + 1).apply();
     }
 
 }
